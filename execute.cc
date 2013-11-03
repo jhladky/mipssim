@@ -46,6 +46,10 @@ void execute() {
     caches.access(addr);
     rf.write(ri.rt, dmem[addr]);
     break;
+  case OP_J:
+    stats.numJType++;
+    pc = rj.target << 2;
+    break;
   default:
     cout << "Unsupported instruction: ";
     instr.printI(instr);
