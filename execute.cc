@@ -21,9 +21,15 @@ void execute() {
   case OP_SPECIAL:
     switch(rg.func) {
     case SP_ADDU:
+      stats.numRType++;
+      stats.numRegWrites++;
+      stats.numRegReads++; //+= 2?
       rf.write(rt.rd, rf[rt.rs] + rf[rt.rt]);
       break;
     case SP_SLL:
+      stats.numRType++;
+      stats.numRegWrites++;
+      stats.numRegReads++;
       rf.write(rt.rd, rf[rt.rt] << rt.sa);
       break;
     default:
@@ -34,14 +40,23 @@ void execute() {
     }
     break;
   case OP_ADDIU:
+    stats.numIType++;
+    stats.numRegWrites++;
+    stats.numRegReads++;
     rf.write(ri.rt, rf[ri.rs] + signExtend16to32ui(ri.imm));
     break;
   case OP_SW:
+    stats.numIType++;
+    stats.numMemWrites++;
+    stats.numRegReads++;
     addr = rf[ri.rs] + signExtend16to32ui(ri.imm);
     caches.access(addr);
     dmem.write(addr, rf[ri.rt]);
     break;
   case OP_LW:
+    stats.numIType++;
+    stats.numMemReads++;
+    stats.numRegReads++;
     addr = rf[ri.rs] + signExtend16to32ui(ri.imm);
     caches.access(addr);
     rf.write(ri.rt, dmem[addr]);
