@@ -14,14 +14,14 @@ string spToString(const Special sp) {
 void op_init() {
   opmap[OP_SPECIAL] = "OP_SPECIAL";
   opmap[OP_REGIMM] = "OP_REGIMM";
-  opmap[OP_J] = "OP_J";
+  opmap[OP_J] = "OP_J"; //Implemented, not tested
   opmap[OP_JAL] = "OP_JAL";
   opmap[OP_BEQ] = "OP_BEQ";
   opmap[OP_BNE] = "OP_BNE";
   opmap[OP_BLEZ] = "OP_BLEZ";
   opmap[OP_BGTZ] = "OP_BGTZ";
   opmap[OP_ADDI] = "OP_ADDI";
-  opmap[OP_ADDIU] = "OP_ADDIU";
+  opmap[OP_ADDIU] = "OP_ADDIU"; //Given
   opmap[OP_SLTI] = "OP_SLTI";
   opmap[OP_SLTIU] = "OP_SLTIU";
   opmap[OP_ANDI] = "OP_ANDI";
@@ -30,15 +30,15 @@ void op_init() {
   opmap[OP_LUI] = "OP_LUI";
   opmap[OP_LB] = "OP_LB";
   opmap[OP_LH] = "OP_LH";
-  opmap[OP_LW] = "OP_LW";
+  opmap[OP_LW] = "OP_LW"; //Given
   opmap[OP_LBU] = "OP_LBU";
   opmap[OP_LHU] = "OP_LHU";
   opmap[OP_SB] = "OP_SB";
   opmap[OP_SH] = "OP_SH";
-  opmap[OP_SW] = "OP_SW";
+  opmap[OP_SW] = "OP_SW"; //Given
   opmap[OP_SBU] = "OP_SBU";
   opmap[OP_SHU] = "OP_SHU";
-  spmap[SP_SLL] = "SP_SLL";
+  spmap[SP_SLL] = "SP_SLL"; //Given
   spmap[SP_SRL] = "SP_SRL";
   spmap[SP_SRA] = "SP_SRA";
   spmap[SP_SLLV] = "SP_SLLV";
@@ -55,7 +55,7 @@ void op_init() {
   spmap[SP_DIV] = "SP_DIV";
   spmap[SP_DIVU] = "SP_DIVU";
   spmap[SP_ADD] = "SP_ADD";
-  spmap[SP_ADDU] = "SP_ADDU";
+  spmap[SP_ADDU] = "SP_ADDU"; //Given
   spmap[SP_SUB] = "SP_SUB";
   spmap[SP_SUBU] = "SP_SUBU";
   spmap[SP_AND] = "SP_AND";
