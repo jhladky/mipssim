@@ -33,14 +33,14 @@ void Memory<Data32, Data32>::write(const unsigned int addr, const Data32 data) {
 
 template<>
 const Data32 Memory<Data8, Data32>::operator[](const unsigned int addr) const {
-  unsigned int myAddr = addr - base;
-  return Data32(m[myAddr], m[myAddr+1], m[myAddr+2], m[myAddr+3]);
+   unsigned int myAddr = addr - base;
+   return Data32(m[myAddr], m[myAddr+1], m[myAddr+2], m[myAddr+3]);
 }
 
 template<>
 const Data32 Memory<Data32, Data32>::operator[](const unsigned int addr) const {
-  unsigned int myAddr = addr - base;
-  return m[myAddr];
+   unsigned int myAddr = addr - base;
+   return m[myAddr];
 }
 
 template<>
@@ -76,6 +76,7 @@ void Memory<Data32, Data32>::dump(DataType dt) const {
 // cache size in blocks). You should also update the "hits" and
 // "misses" counters.
 bool Cache::access(unsigned int address) {
+   printStats();
   return false;
 }
 
@@ -88,7 +89,7 @@ void Stats::print() {
        << "Number of Memory Reads: " << numMemReads << endl
        << "Number of Memory Writes: " << numMemWrites << endl
        << "Number of Register Reads: " << numRegReads << endl
-       << "Number of Register Writes: " << numRegWrites << endl;
+       << "Number of Register Writes: " << numRegWrites << endl
        << "Branches: " << endl
        << "  Forward:" << endl
        << "    Taken: " << numForwardBranchesTaken << endl

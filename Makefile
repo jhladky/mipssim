@@ -13,7 +13,6 @@ LIBS		= -lstdc++
 # DEPEND_FLAGS	= 
 # DEPEND_DEFINES	= 
 
-
 default: $(TARGETS)
 
 all: default

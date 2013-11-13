@@ -37,22 +37,22 @@ int main(int argc, char ** argv) {
   }
 
   if (filename == "") {
-    cerr << "ERROR: no source file specified; "
-         << "run this program with -f filename" << endl;
-    exit(1);
+     cerr << "ERROR: no source file specified; "
+          << "run this program with -f filename" << endl;
+     exit(1);
   }
 
   op_init();
 
   parse(filename.c_str());
-
+  
   if (opts.program) {
     cout << "Instructions:" << endl;
     imem.dump(INSTRUCTIONS);
   }
-
+  
   cout << "Starting at PC " << hex << pc << endl;
-
+  
   while(imem.inRange(pc)) {
     if (opts.instrs) {
       cout << "Executing: " << pc << ": ";
