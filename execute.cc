@@ -9,6 +9,8 @@ unsigned int signExtend16to32ui(short i) {
 }
 
 void execute() {
+   static unsigned int pctemp;
+   static bool doJump = false;
    Data32 instr = imem[pc];
    GenericType rg(instr);
    RType rt(instr);
@@ -16,8 +18,15 @@ void execute() {
    JType rj(instr);
    unsigned int pctarget = pc + 4;
    unsigned int addr;
+   
+   if(doJump) {
+      pc = pctemp;
+      doJump = false;
+   } else {
+      pc = pctarget;
+   }
+   
    stats.instrs++;
-   pc = pctarget;
    switch(rg.op) {
    case OP_SPECIAL:
       switch(rg.func) {
@@ -39,15 +48,18 @@ void execute() {
          stats.numRType++;
          stats.numRegReads++;
          
-         pctarget = rf[rt.rd];
+         pctemp = rf[rt.rd];
+         doJump = true;
          break;
       case SP_JALR: //IMPLEMENT ME!!
          stats.numRType++;
          stats.numRegReads++;
          stats.numRegWrites++;
 
-         rf.write(31, pc);
-         pctarget = rf[rt.rd];
+         rf.write(31, pc + 4);
+         //pctarget = rf[rt.rd];
+         pctemp = rf[rt.rd];
+         doJump = true;
          break;
       default:
          cout << "Unsupported instruction: ";
@@ -98,12 +110,20 @@ void execute() {
 
       rf.write(ri.rt, ri.imm << 16);
       break;
+   case OP_LBU: //IMPLEMENT ME!!!
+      stats.numIType++;
+      stats.numRegWrites++;
+      
+      rf.write(ri.rt, dmem[rf[ri.rs] + ri.imm]);
+      break;
    case OP_BEQ: //IMPLEMENT ME!!!
       stats.numIType++;
       stats.numRegReads += 2;
       
       if(rf[ri.rs] == rf[ri.rt]) {
-         pctarget += (ri.imm << 2);
+         //pctarget += (ri.imm << 2);
+         pctemp = pctarget + (ri.imm << 2);
+         doJump = true;
       }
       break;
    case OP_BNE: //IMPLEMENT ME!!!
@@ -111,20 +131,25 @@ void execute() {
       stats.numRegReads += 2;
       
       if(rf[ri.rs] != rf[ri.rt]) {
-         pctarget += (ri.imm << 2);
+         //pctarget += (ri.imm << 2);
+         pctemp = pctarget + (ri.imm << 2);
+         doJump = true;
       }
       break;
    case OP_J: //IMPLEMENT ME!!! (done possibly)
       stats.numJType++;
       
-      pctarget = (pc & 0xf0000000) | rj.target << 2;
+      pctemp = rj.target << 2;
+      doJump = true;
       break;
    case OP_JAL: //IMPLEMENT ME!!!
       stats.numJType++;
       stats.numRegWrites++;
       
-      rf.write(31, pc + 8);
-      pctarget = (pc & 0xf0000000) | rj.target << 2;
+      rf.write(31, pc + 4);
+      //pctarget = (pc & 0xf0000000) | rj.target << 2;
+      pctemp = rj.target << 2;
+      doJump = true;
       break;
    default:
       cout << "Unsupported instruction: ";
