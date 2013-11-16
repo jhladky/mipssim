@@ -1,5 +1,6 @@
 #include "mipsim.hpp"
 #include <cstdlib>
+#include <stdio.h>
 #include <iostream>
 
 Stats stats;
@@ -30,9 +31,7 @@ void execute() {
    }
    
    stats.instrs++;
-   if(count++ == 200) {
-      exit(1);
-   }
+
    switch(rg.op) {
    case OP_SPECIAL:
       switch(rg.func) {
@@ -41,12 +40,7 @@ void execute() {
          stats.numRegWrites++;
          stats.numRegReads += 2; //+= 2?
          
-         cout << "Value of RS in ADDU: " << rt.rs << endl;
-         cout << "Value of RT in ADDU: " << rt.rt << endl;
-         cout << "Arg RS to ADDU: " << rf[rt.rs] << endl;
-         cout << "Arg immed to ADDU: " << rf[rt.rt] << endl;
          rf.write(rt.rd, rf[rt.rs] + rf[rt.rt]);
-         cout << "Result of ADDU: " << rf[rt.rd] << endl;
          break;
       case SP_SLL:
          stats.numRType++;
@@ -83,12 +77,8 @@ void execute() {
       stats.numRegWrites++;
       stats.numRegReads++;
 
-      cout << "Value of RS in ADDIU: " << ri.rs << endl;
-      cout << "Value of RT in ADDIU: " << ri.rt << endl;
-      cout << "Arg RS to ADDIU: " << rf[ri.rs] << endl;
-      cout << "Arg immed to ADDIU: " << signExtend16to32ui(ri.imm) << endl;
       rf.write(ri.rt, rf[ri.rs] + signExtend16to32ui(ri.imm));
-      cout << "Result of ADDIU: " << rf[ri.rt] << endl;
+
       break;
    case OP_SW:
       stats.numIType++;
@@ -112,16 +102,16 @@ void execute() {
       stats.numIType++;
       stats.numRegReads++;
       stats.numRegWrites++;
-      
 
+      //printf("STLI: comp, ri.rt(%d): %d < %d\n", ri.rt, rf[ri.rt].data_uint(), signExtend16to32ui(ri.imm));
       if(rf[ri.rs] < signExtend16to32ui(ri.imm)) {
          rf.write(ri.rt, 1U);
-         cout << "SLTI: TRUE, ri.rt is: " <<  rf[ri.rt] << endl << endl;
+         //printf("STLI: TRUE, value of ri.rt(%d): %d\n", ri.rt, rf[ri.rt].data_uint());
       } else {
          rf.write(ri.rt, 0U);
-         cout << "SLTI: FALSE, ri.rt is: " <<  rf[ri.rt] << endl << endl;
+         //printf("STLI: TRUE, value of ri.rt(%d): %d\n", ri.rt, rf[ri.rt].data_uint());
       }
-      
+      break;
    case OP_LUI: //IMPLEMENT ME!!!
       stats.numIType++;
       stats.numRegWrites++;
@@ -140,7 +130,6 @@ void execute() {
       
       if(rf[ri.rs] == rf[ri.rt]) {
          pctemp = pc + (signExtend16to32ui(ri.imm) << 2);
-         cout << "OP_BEQ setting new pc to: " << pctemp << endl;
          doJump = true;
       }
       break;
@@ -148,13 +137,9 @@ void execute() {
       stats.numIType++;
       stats.numRegReads += 2;
 
-      cout << "Value of RS in BNE: " << ri.rs << endl;
-      cout << "Value of RT in BNE: " << ri.rt << endl;
-      cout << "Arg RS to BNE: " << rf[ri.rs] << endl;
-      cout << "Arg RT to BNE: " << rf[ri.rt] << endl;
+      //printf("BNE: ri.rs(%d):%d != ri.rt(%d):%d\n", ri.rs, rf[ri.rs].data_uint(), ri.rt, rf[ri.rt].data_uint());
       if(rf[ri.rs] != rf[ri.rt]) {
          pctemp = pc + (signExtend16to32ui(ri.imm) << 2);
-         cout << "OP_BNE setting new pc to: "  << pctemp << endl;
          doJump = true;
       }
       
@@ -163,9 +148,8 @@ void execute() {
       stats.numJType++;
       
       pctemp = (pc & 0xf0000000) | (rj.target << 2);
-      cout << "OP_J setting new pc to: "  << pctemp << endl;
-      
       doJump = true;
+
       break;
    case OP_JAL: //IMPLEMENT ME!!!
       stats.numJType++;
@@ -173,8 +157,8 @@ void execute() {
       
       rf.write(31, pc + 4);
       pctemp = (pc & 0xf0000000) | (rj.target << 2);
-      cout << "OP_JAL setting new pc to: "  << pctemp << endl;
       doJump = true;
+
       break;
    default:
       cout << "Unsupported instruction: ";
@@ -183,11 +167,3 @@ void execute() {
       break;
    }
 }
-
-
-//Executing: 400188: op: OP_J target: 10006f
-/*
-  24 bits, 
-we need 32 bits
-
- */
