@@ -12,6 +12,7 @@ unsigned int signExtend16to32ui(short i) {
 
 void execute() {
    static unsigned int pctemp;
+   static bool wasLoad = false;
    static bool doJump = false;
    static int count = 0;
    Data32 instr = imem[pc];
@@ -23,15 +24,24 @@ void execute() {
    unsigned int addr;
    
    if(doJump) {
-      cout << "newLoc: " << pctemp << endl;
+      //cout << "newLoc: " << pctemp << endl;
+      stats.numRegWrites++;
+      stats.numRegReads++;
       pc = pctemp;
       doJump = false;
    } else {
       pc = pctarget;
    }
    
-   stats.instrs++;
-
+   if(instr.data_uint() == 0U) {
+      wasLoad = false;
+      return;
+   } else {
+      stats.loadHasLoadUseStall += wasLoad;
+      wasLoad = false;
+      stats.instrs++;
+   }
+   
    switch(rg.op) {
    case OP_SPECIAL:
       switch(rg.func) {
@@ -50,19 +60,21 @@ void execute() {
          rf.write(rt.rd, rf[rt.rt] << rt.sa);
          break;
       case SP_JR: //IMPLEMENT ME!!!
+         printf("blah\n");
          stats.numRType++;
          stats.numRegReads++;
          
-         pctemp = rf[rt.rd];
+         pctemp = rf[rt.rs];
          doJump = true;
          break;
       case SP_JALR: //IMPLEMENT ME!!
+         printf("blah2\n");
          stats.numRType++;
          stats.numRegReads++;
          stats.numRegWrites++;
-
+         
          rf.write(31, pc + 4);
-         pctemp = rf[rt.rd];
+         pctemp = rf[rt.rs];
          doJump = true;
          break;
       default:
@@ -83,7 +95,7 @@ void execute() {
    case OP_SW:
       stats.numIType++;
       stats.numMemWrites++;
-      stats.numRegReads++;
+      stats.numRegReads += 2;
       
       addr = rf[ri.rs] + signExtend16to32ui(ri.imm);
       caches.access(addr);
@@ -93,7 +105,9 @@ void execute() {
       stats.numIType++;
       stats.numMemReads++;
       stats.numRegReads++;
+      stats.numRegWrites++;
       
+      wasLoad = true;
       addr = rf[ri.rs] + signExtend16to32ui(ri.imm);
       caches.access(addr);
       rf.write(ri.rt, dmem[addr]);
@@ -121,6 +135,8 @@ void execute() {
    case OP_LBU: //IMPLEMENT ME!!!
       stats.numIType++;
       stats.numRegWrites++;
+      stats.numRegReads++;
+      stats.numMemReads++;
       
       rf.write(ri.rt, dmem[rf[ri.rs] + ri.imm]);
       break;
