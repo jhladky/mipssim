@@ -373,6 +373,9 @@ public:
   unsigned int numRegWrites;
   unsigned int numRegReads;
 
+  unsigned int exStageForward;
+  unsigned int memStageForward;
+
   unsigned int numForwardBranchesTaken;
   unsigned int numForwardBranchesNotTaken;
   unsigned int numBackwardBranchesTaken;
@@ -387,6 +390,8 @@ public:
   unsigned int loadHasLoadUseHazard;
   unsigned int loadHasLoadUseStall;
   unsigned int loadHasNoLoadUseHazard;
+
+  unsigned int otherCount;
 
   void print();
 };

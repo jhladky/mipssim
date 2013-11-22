@@ -7,12 +7,20 @@ Stats stats;
 Caches caches(0);
 
 
-void checkForLoadHasLoadUseStall(int writeRegister, int readRegisterOne, int readRegisterTwo) {
-   if (writeRegister >= 0 && (writeRegister == readRegisterOne || writeRegister == readRegisterTwo)) {
+void checkForwardAndStall(int loadRegister, int writeRegister, int readRegisterOne, int readRegisterTwo) {
+//Possible debug >= 0...
+   if (loadRegister > 0 && (loadRegister == readRegisterOne || loadRegister == readRegisterTwo)) {
       stats.numRegWrites++;
       stats.numRegReads++;
       stats.cycles++;
-      stats.loadHasLoadUseStall++;
+      stats.loadHasLoadUseStall++;//Seems like this should indicate forwarding not a stall...
+      stats.memStageForward++;
+   } else if (writeRegister > 0 && (writeRegister == readRegisterOne || writeRegister == readRegisterTwo)) {
+      stats.exStageForward++;
+   }
+
+   if (loadRegister > 0 && !(loadRegister == readRegisterOne || loadRegister == readRegisterTwo)) {
+      printf("Load miss\n");
    }
 }
 
@@ -23,11 +31,11 @@ unsigned int signExtend16to32ui(short i) {
 void execute() {
    static unsigned int pctemp;
    static bool jumpCycle = false;
+   static int loadRegister = -1;
    static int writeRegister = -1;
    static bool branchCycle = false;
    static bool followNewAddress = false;
 
-   static int count = 0;
    Data32 instr = imem[pc];
    GenericType rg(instr);
    RType rt(instr);
@@ -40,11 +48,18 @@ void execute() {
 
    bool lastJumpCycle = jumpCycle;
    bool lastBranchCycle = branchCycle;
-   int lastWriteRegister = writeRegister;
+   int previousLoadRegister = loadRegister;
+
+
+   if (instr.classifyType(instr) != J_TYPE) {
+      checkForwardAndStall(loadRegister, writeRegister, rt.rs, rt.rt);
+   }
+
+   loadRegister = -1;
+   writeRegister = -1;
 
    jumpCycle = false;
    branchCycle = false;
-   writeRegister = -1;
 
    if(followNewAddress) {
       pc = pctemp;
@@ -56,9 +71,10 @@ void execute() {
    if(instr.data_uint() == 0U) {
       if (lastJumpCycle) {
          stats.hasUselessJumpDelaySlot++;
+         //stats.memStageForward++;//This is wrong but makes the output correct for fib
       }
 
-      if (lastWriteRegister >= 0) {
+      if (previousLoadRegister >= 0) {
          stats.loadHasLoadUseStall++;
       }
 
@@ -73,12 +89,12 @@ void execute() {
          stats.hasUsefulJumpDelaySlot++;
       }
 
-      if (lastWriteRegister >= 0) {
-         stats.loadHasNoLoadUseHazard++;
+      if (previousLoadRegister >= 0) {
+         stats.loadHasNoLoadUseHazard++; //Not so sure about this...
       }
 
       if (lastBranchCycle) {
-         stats.hasUselessBranchDelaySlot++;
+         stats.hasUsefulBranchDelaySlot++;
       }
 
       stats.instrs++;
@@ -90,22 +106,23 @@ void execute() {
             stats.numRType++;
             stats.numRegWrites++;
             stats.numRegReads += 2;
-            checkForLoadHasLoadUseStall(lastWriteRegister, rt.rs, rt.rt);
 
             rf.write(rt.rd, rf[rt.rs] + rf[rt.rt]);
+            writeRegister = rt.rd;
+
             break;
          case SP_SLL:
             stats.numRType++;
             stats.numRegWrites++;
             stats.numRegReads++;
-            checkForLoadHasLoadUseStall(lastWriteRegister, rt.rt, -1);
 
             rf.write(rt.rd, rf[rt.rt] << rt.sa);
+            writeRegister = rt.rd;
+
             break;
          case SP_JR:
             stats.numRType++;
             stats.numRegReads++;
-            checkForLoadHasLoadUseStall(lastWriteRegister, rt.rs, -1);
 
             pctemp = rf[rt.rs];
             followNewAddress = true;
@@ -115,12 +132,26 @@ void execute() {
             stats.numRType++;
             stats.numRegReads++;
             stats.numRegWrites++;
-            checkForLoadHasLoadUseStall(lastWriteRegister, rt.rs, -1);
 
             rf.write(31, pc + 4);
+            writeRegister = 31;
+
             pctemp = rf[rt.rs];
             followNewAddress = true;
             jumpCycle = true;
+            break;
+         case SP_SLT:
+            stats.numRType++;
+            stats.numRegReads += 2;
+            stats.numRegWrites++;
+
+            if(rf[rt.rs] < rf[rt.rt]) {
+               rf.write(rt.rd, 1U);
+            } else {
+               rf.write(rt.rd, 0U);
+            }
+            writeRegister = rt.rd;
+
             break;
          default:
             cout << "Unsupported instruction: ";
@@ -133,69 +164,59 @@ void execute() {
          stats.numIType++;
          stats.numRegWrites++;
          stats.numRegReads++;
-         checkForLoadHasLoadUseStall(lastWriteRegister, ri.rs, -1);
 
          rf.write(ri.rt, rf[ri.rs] + signExtend16to32ui(ri.imm));
+         writeRegister = ri.rt;
 
          break;
       case OP_SW:
          stats.numIType++;
          stats.numMemWrites++;
          stats.numRegReads += 2;
-         checkForLoadHasLoadUseStall(lastWriteRegister, ri.rs, ri.rt);
 
          addr = rf[ri.rs] + signExtend16to32ui(ri.imm);
          caches.access(addr);
          dmem.write(addr, rf[ri.rt]);
+
          break;
       case OP_LW:
          stats.numIType++;
          stats.numMemReads++;
          stats.numRegReads++;
          stats.numRegWrites++;
-         checkForLoadHasLoadUseStall(lastWriteRegister, ri.rs, -1);
 
          addr = rf[ri.rs] + signExtend16to32ui(ri.imm);
          caches.access(addr);
-         writeRegister = ri.rt;
          rf.write(ri.rt, dmem[addr]);
+         loadRegister = writeRegister = ri.rt;
+
          break;
-      case OP_SLTI: //IMPLEMENT ME!!!
+      case OP_SLTI:
          stats.numIType++;
          stats.numRegReads++;
          stats.numRegWrites++;
-         checkForLoadHasLoadUseStall(lastWriteRegister, ri.rs, -1);
 
-         //printf("STLI: comp, ri.rt(%d): %d < %d\n", ri.rt, rf[ri.rt].data_uint(), signExtend16to32ui(ri.imm));
          if(rf[ri.rs] < signExtend16to32ui(ri.imm)) {
             rf.write(ri.rt, 1U);
-            //printf("STLI: TRUE, value of ri.rt(%d): %d\n", ri.rt, rf[ri.rt].data_uint());
          } else {
             rf.write(ri.rt, 0U);
-            //printf("STLI: TRUE, value of ri.rt(%d): %d\n", ri.rt, rf[ri.rt].data_uint());
          }
+
+         writeRegister = ri.rt;
+
          break;
-      case OP_LUI: //IMPLEMENT ME!!!
+      case OP_LUI:
          stats.numIType++;
          stats.numRegWrites++;
 
          rf.write(ri.rt, ri.imm << 16);
-         break;
-      case OP_LBU: //IMPLEMENT ME!!!
-         stats.numIType++;
-         stats.numRegWrites++;
-         stats.numRegReads++;
-         stats.numMemReads++;
-         checkForLoadHasLoadUseStall(lastWriteRegister, ri.rs, -1);
-
          writeRegister = ri.rt;
-         rf.write(ri.rt, dmem[rf[ri.rs] + ri.imm]);
+
          break;
-      case OP_BEQ: //IMPLEMENT ME!!!
+      case OP_BEQ:
          stats.numIType++;
          stats.numBranches++;
          stats.numRegReads += 2;
-         checkForLoadHasLoadUseStall(lastWriteRegister, ri.rs, ri.rt);
 
          if(rf[ri.rs] == rf[ri.rt]) {
             pctemp = pc + (signExtend16to32ui(ri.imm) << 2);
@@ -216,13 +237,11 @@ void execute() {
          branchCycle = true;
 
          break;
-      case OP_BNE: //IMPLEMENT ME!!!
+      case OP_BNE:
          stats.numIType++;
          stats.numBranches++;
          stats.numRegReads += 2;
-         checkForLoadHasLoadUseStall(lastWriteRegister, ri.rs, ri.rt);
 
-         //printf("BNE: ri.rs(%d):%d != ri.rt(%d):%d\n", ri.rs, rf[ri.rs].data_uint(), ri.rt, rf[ri.rt].data_uint());
          if(rf[ri.rs] != rf[ri.rt]) {
             pctemp = pc + (signExtend16to32ui(ri.imm) << 2);
             followNewAddress = true;
@@ -243,7 +262,7 @@ void execute() {
          branchCycle = true;
 
          break;
-      case OP_J: //IMPLEMENT ME!!! (done possibly)
+      case OP_J:
          stats.numJType++;
 
          pctemp = (pc & 0xf0000000) | (rj.target << 2);
@@ -251,14 +270,63 @@ void execute() {
          followNewAddress = true;
 
          break;
-      case OP_JAL: //IMPLEMENT ME!!!
+      case OP_JAL:
          stats.numJType++;
          stats.numRegWrites++;
 
          rf.write(31, pc + 4);
+         writeRegister = 31;
+
          pctemp = (pc & 0xf0000000) | (rj.target << 2);
          jumpCycle = true;
          followNewAddress = true;
+
+         break;
+      case OP_LB: {
+         stats.numMemReads++;
+         stats.numIType++;
+         stats.numRegReads++;
+         stats.numRegWrites++;
+
+         addr = rf[ri.rs] + signExtend16to32ui(ri.imm);
+         unsigned int tmp = dmem[(addr / 4) * 4] >> (3 - addr % 4) * 8 & (1 << 8) - 1;
+         rf.write(ri.rt, signExtend16to32ui(tmp));
+         loadRegister = writeRegister = ri.rt;
+         }
+         break;
+      case OP_SB: {
+         stats.numMemWrites++;
+         stats.numIType++;
+         stats.numRegReads += 2;
+
+         addr = rf[ri.rs] + signExtend16to32ui(ri.imm);
+         unsigned int fromReg = rf[ri.rt] & (1 << 8) - 1;
+         fromReg <<= (3 - addr % 4) * 8;
+         unsigned int fromMem = dmem[addr / 4 * 4];
+         fromMem &= ~(((1 << 8) - 1) << (3 - addr % 4) * 8);
+         fromMem = fromMem | fromReg;
+         dmem.write(addr, fromMem);
+         }
+         break;
+      case OP_ORI: {
+         stats.numIType++;
+         stats.numRegWrites++;
+         stats.numRegReads++;
+         unsigned int tmp = ri.imm & ((1<<16) - 1);
+         rf.write(ri.rt, rf[ri.rs] | tmp);
+         writeRegister = ri.rt;
+         }
+         break;
+      case OP_LBU:
+         stats.numIType++;
+         stats.numRegWrites++;
+         stats.numRegReads++;
+         stats.numMemReads++;
+
+         addr = rf[ri.rs] + signExtend16to32ui(ri.imm);
+         rf.write(ri.rt, dmem[(addr / 4) * 4] >> (3 - addr % 4) * 8 & (1 << 8) - 1);
+
+         loadRegister = writeRegister = ri.rt;
 
          break;
       default:

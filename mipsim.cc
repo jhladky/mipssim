@@ -91,6 +91,9 @@ void Stats::print() {
        << "Number of Memory Writes: " << numMemWrites << endl
        << "Number of Register Reads: " << numRegReads << endl
        << "Number of Register Writes: " << numRegWrites << endl
+       << "Number of Forwards:" << endl
+       << "  From Ex Stage " << exStageForward << endl
+       << "  From Mem Stage: " << memStageForward << endl
        << "Branches: " << endl
        << "  Forward:" << endl
        << "    Taken: " << numForwardBranchesTaken << endl
@@ -101,13 +104,14 @@ void Stats::print() {
        << "Branch delay slot: " << endl
        << "  Useful instruction: " << hasUsefulBranchDelaySlot << endl
        << "  Not useful instruction: " << hasUselessBranchDelaySlot << endl
-       << "Jump delay slat: " << endl
+       << "Jump delay slot: " << endl
        << "  Useful instruction: " << hasUsefulJumpDelaySlot << endl
        << "  Not useful instruction: " << hasUselessJumpDelaySlot << endl
        << "Load Use Hazard: " << endl
        << "  Has load use stall: " << loadHasLoadUseStall << endl
        << "  Has load use hazard: " << loadHasLoadUseHazard << endl
-       << "  Has no load use hazard: " << loadHasNoLoadUseHazard << endl;
+       << "  Has no load use hazard: " << loadHasNoLoadUseHazard << endl
+       << "Othe count: " << otherCount << endl;
 }
 
 unsigned int swizzle(unsigned int d) {
