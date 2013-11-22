@@ -7,7 +7,7 @@ Stats stats;
 Caches caches(0);
 
 
-void checkForHazards(int writeRegister, int readRegisterOne, int readRegisterTwo) {
+void checkForLoadHasLoadUseStall(int writeRegister, int readRegisterOne, int readRegisterTwo) {
    if (writeRegister >= 0 && (writeRegister == readRegisterOne || writeRegister == readRegisterTwo)) {
       stats.numRegWrites++;
       stats.numRegReads++;
@@ -90,7 +90,7 @@ void execute() {
             stats.numRType++;
             stats.numRegWrites++;
             stats.numRegReads += 2;
-            checkForHazards(lastWriteRegister, rt.rs, rt.rt);
+            checkForLoadHasLoadUseStall(lastWriteRegister, rt.rs, rt.rt);
 
             rf.write(rt.rd, rf[rt.rs] + rf[rt.rt]);
             break;
@@ -98,14 +98,14 @@ void execute() {
             stats.numRType++;
             stats.numRegWrites++;
             stats.numRegReads++;
-            checkForHazards(lastWriteRegister, rt.rt, -1);
+            checkForLoadHasLoadUseStall(lastWriteRegister, rt.rt, -1);
 
             rf.write(rt.rd, rf[rt.rt] << rt.sa);
             break;
          case SP_JR:
             stats.numRType++;
             stats.numRegReads++;
-            checkForHazards(lastWriteRegister, rt.rs, -1);
+            checkForLoadHasLoadUseStall(lastWriteRegister, rt.rs, -1);
 
             pctemp = rf[rt.rs];
             followNewAddress = true;
@@ -115,7 +115,7 @@ void execute() {
             stats.numRType++;
             stats.numRegReads++;
             stats.numRegWrites++;
-            checkForHazards(lastWriteRegister, rt.rs, -1);
+            checkForLoadHasLoadUseStall(lastWriteRegister, rt.rs, -1);
 
             rf.write(31, pc + 4);
             pctemp = rf[rt.rs];
@@ -133,7 +133,7 @@ void execute() {
          stats.numIType++;
          stats.numRegWrites++;
          stats.numRegReads++;
-         checkForHazards(lastWriteRegister, ri.rs, -1);
+         checkForLoadHasLoadUseStall(lastWriteRegister, ri.rs, -1);
 
          rf.write(ri.rt, rf[ri.rs] + signExtend16to32ui(ri.imm));
 
@@ -142,7 +142,7 @@ void execute() {
          stats.numIType++;
          stats.numMemWrites++;
          stats.numRegReads += 2;
-         checkForHazards(lastWriteRegister, ri.rs, ri.rt);
+         checkForLoadHasLoadUseStall(lastWriteRegister, ri.rs, ri.rt);
 
          addr = rf[ri.rs] + signExtend16to32ui(ri.imm);
          caches.access(addr);
@@ -153,7 +153,7 @@ void execute() {
          stats.numMemReads++;
          stats.numRegReads++;
          stats.numRegWrites++;
-         checkForHazards(lastWriteRegister, ri.rs, -1);
+         checkForLoadHasLoadUseStall(lastWriteRegister, ri.rs, -1);
 
          addr = rf[ri.rs] + signExtend16to32ui(ri.imm);
          caches.access(addr);
@@ -164,7 +164,7 @@ void execute() {
          stats.numIType++;
          stats.numRegReads++;
          stats.numRegWrites++;
-         checkForHazards(lastWriteRegister, ri.rs, -1);
+         checkForLoadHasLoadUseStall(lastWriteRegister, ri.rs, -1);
 
          //printf("STLI: comp, ri.rt(%d): %d < %d\n", ri.rt, rf[ri.rt].data_uint(), signExtend16to32ui(ri.imm));
          if(rf[ri.rs] < signExtend16to32ui(ri.imm)) {
@@ -186,7 +186,7 @@ void execute() {
          stats.numRegWrites++;
          stats.numRegReads++;
          stats.numMemReads++;
-         checkForHazards(lastWriteRegister, ri.rs, -1);
+         checkForLoadHasLoadUseStall(lastWriteRegister, ri.rs, -1);
 
          writeRegister = ri.rt;
          rf.write(ri.rt, dmem[rf[ri.rs] + ri.imm]);
@@ -195,7 +195,7 @@ void execute() {
          stats.numIType++;
          stats.numBranches++;
          stats.numRegReads += 2;
-         checkForHazards(lastWriteRegister, ri.rs, ri.rt);
+         checkForLoadHasLoadUseStall(lastWriteRegister, ri.rs, ri.rt);
 
          if(rf[ri.rs] == rf[ri.rt]) {
             pctemp = pc + (signExtend16to32ui(ri.imm) << 2);
@@ -220,7 +220,7 @@ void execute() {
          stats.numIType++;
          stats.numBranches++;
          stats.numRegReads += 2;
-         checkForHazards(lastWriteRegister, ri.rs, ri.rt);
+         checkForLoadHasLoadUseStall(lastWriteRegister, ri.rs, ri.rt);
 
          //printf("BNE: ri.rs(%d):%d != ri.rt(%d):%d\n", ri.rs, rf[ri.rs].data_uint(), ri.rt, rf[ri.rt].data_uint());
          if(rf[ri.rs] != rf[ri.rt]) {
