@@ -235,7 +235,6 @@ public:
   }
   static void printI(const Data32 d) {
     RType rt(d); IType it(d); JType jt(d);
-    cout << "0x" << hex << d << " ";
     switch (classifyType(d)) {
     case R_TYPE:
       cout << hex

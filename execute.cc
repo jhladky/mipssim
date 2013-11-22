@@ -18,13 +18,13 @@ void checkForwardAndStall(int loadRegister, int writeRegister, int readRegisterO
    } else if (writeRegister > 0 && (writeRegister == readRegisterOne || writeRegister == readRegisterTwo)) {
       stats.exStageForward++;
    }
-
-   if (loadRegister > 0 && !(loadRegister == readRegisterOne || loadRegister == readRegisterTwo)) {
-      printf("Load miss\n");
-   }
 }
 
 unsigned int signExtend16to32ui(short i) {
+   return static_cast<unsigned int>(static_cast<int>(i));
+}
+
+unsigned int signExtend8to32ui(char i) {
    return static_cast<unsigned int>(static_cast<int>(i));
 }
 
@@ -50,6 +50,13 @@ void execute() {
    bool lastBranchCycle = branchCycle;
    int previousLoadRegister = loadRegister;
 
+  // if (stats.instrs > 386447534) {
+  //    opts.instrs = true;
+  // }
+
+  // if (stats.instrs > (386447534 + 1000)) {
+    //  exit(1);
+  // }
 
    if (instr.classifyType(instr) != J_TYPE) {
       checkForwardAndStall(loadRegister, writeRegister, rt.rs, rt.rt);
@@ -90,7 +97,7 @@ void execute() {
       }
 
       if (previousLoadRegister >= 0) {
-         stats.loadHasNoLoadUseHazard++; //Not so sure about this...
+         stats.loadHasNoLoadUseHazard++;
       }
 
       if (lastBranchCycle) {
@@ -107,7 +114,7 @@ void execute() {
             stats.numRegWrites++;
             stats.numRegReads += 2;
 
-            rf.write(rt.rd, rf[rt.rs] + rf[rt.rt]);
+            rf.write(rt.rd, rf[rt.rs].data_uint() + rf[rt.rt].data_uint());
             writeRegister = rt.rd;
 
             break;
@@ -116,7 +123,7 @@ void execute() {
             stats.numRegWrites++;
             stats.numRegReads++;
 
-            rf.write(rt.rd, rf[rt.rt] << rt.sa);
+            rf.write(rt.rd, rf[rt.rt].data_int() << rt.sa);
             writeRegister = rt.rd;
 
             break;
@@ -145,7 +152,7 @@ void execute() {
             stats.numRegReads += 2;
             stats.numRegWrites++;
 
-            if(rf[rt.rs] < rf[rt.rt]) {
+            if(rf[rt.rs].data_int() < rf[rt.rt].data_int()) {
                rf.write(rt.rd, 1U);
             } else {
                rf.write(rt.rd, 0U);
@@ -165,7 +172,7 @@ void execute() {
          stats.numRegWrites++;
          stats.numRegReads++;
 
-         rf.write(ri.rt, rf[ri.rs] + signExtend16to32ui(ri.imm));
+         rf.write(ri.rt, rf[ri.rs].data_uint() + signExtend16to32ui(ri.imm));
          writeRegister = ri.rt;
 
          break;
@@ -196,7 +203,7 @@ void execute() {
          stats.numRegReads++;
          stats.numRegWrites++;
 
-         if(rf[ri.rs] < signExtend16to32ui(ri.imm)) {
+         if(rf[ri.rs].data_int() < signExtend16to32ui(ri.imm)) {
             rf.write(ri.rt, 1U);
          } else {
             rf.write(ri.rt, 0U);
@@ -290,7 +297,7 @@ void execute() {
 
          addr = rf[ri.rs] + signExtend16to32ui(ri.imm);
          unsigned int tmp = dmem[(addr / 4) * 4] >> (3 - addr % 4) * 8 & (1 << 8) - 1;
-         rf.write(ri.rt, signExtend16to32ui(tmp));
+         rf.write(ri.rt, signExtend8to32ui(tmp));
          loadRegister = writeRegister = ri.rt;
          }
          break;
@@ -312,8 +319,9 @@ void execute() {
          stats.numIType++;
          stats.numRegWrites++;
          stats.numRegReads++;
-         unsigned int tmp = ri.imm & ((1<<16) - 1);
-         rf.write(ri.rt, rf[ri.rs] | tmp);
+         unsigned int tmp = ri.imm & 0x0000FFFF;
+         unsigned int tmp2 = rf[ri.rs] & 0x0000FFFF;
+         rf.write(ri.rt, tmp2 | tmp);
          writeRegister = ri.rt;
          }
          break;
