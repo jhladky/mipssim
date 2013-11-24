@@ -110,8 +110,7 @@ void Stats::print() {
        << "Load Use Hazard: " << endl
        << "  Has load use stall: " << loadHasLoadUseStall << endl
        << "  Has load use hazard: " << loadHasLoadUseHazard << endl
-       << "  Has no load use hazard: " << loadHasNoLoadUseHazard << endl
-       << "Othe count: " << otherCount << endl;
+       << "  Has no load use hazard: " << loadHasNoLoadUseHazard << endl;
 }
 
 unsigned int swizzle(unsigned int d) {

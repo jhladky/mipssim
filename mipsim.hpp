@@ -390,8 +390,6 @@ public:
   unsigned int loadHasLoadUseStall;
   unsigned int loadHasNoLoadUseHazard;
 
-  unsigned int otherCount;
-
   void print();
 };
 
