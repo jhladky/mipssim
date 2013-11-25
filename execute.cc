@@ -273,6 +273,33 @@ void execute() {
          branchCycle = true;
 
          break;
+      case OP_BLEZ:
+         stats.numIType++;
+         stats.numBranches++;
+         stats.numRegReads += 2; //Is right
+         //stats.numRegReads++; //Should be right
+
+         pctemp = pc + (signExtend16to32ui(ri.imm) << 2);
+         checkForward(writeRegisters[2], writeRegisters[1], ri.rs, -1);
+         if(rf[ri.rs] <= 0) {
+            followNewAddress = true;
+
+            if (pctemp < pc) {
+               stats.numBackwardBranchesTaken++;
+            } else {
+               stats.numForwardBranchesTaken++;
+            }
+         } else {
+            if (pctemp < pc) {
+               stats.numBackwardBranchesNotTaken++;
+            } else {
+               stats.numForwardBranchesNotTaken++;
+            }
+         }
+
+         branchCycle = true;
+
+         break;
       case OP_J:
          stats.numJType++;
 
