@@ -276,8 +276,7 @@ void execute() {
       case OP_BLEZ:
          stats.numIType++;
          stats.numBranches++;
-         stats.numRegReads += 2; //Is right
-         //stats.numRegReads++; //Should be right
+         stats.numRegReads += 2;//+2 because we're technically reading the "zero" register
 
          pctemp = pc + (signExtend16to32ui(ri.imm) << 2);
          checkForward(writeRegisters[2], writeRegisters[1], ri.rs, -1);
