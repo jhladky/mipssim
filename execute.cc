@@ -327,6 +327,7 @@ void execute() {
          checkForward(writeRegisters[2], writeRegisters[1], ri.rs, -1);
          addr = rf[ri.rs] + signExtend16to32ui(ri.imm);
          tmp2 = dmem[addr];
+         caches.access(addr);
          rf.write(ri.rt, signExtend16to32ui(tmp2.data_ubyte4(0)));
          writeRegisters[0] = ri.rt;
          loadCycle = true;
@@ -341,6 +342,7 @@ void execute() {
          tmp = rf[ri.rt] & mask;
 
          tmp2 = dmem[addr];
+         caches.access(addr);
          tmp2.set_data_ubyte4(0, tmp);
          dmem.write(addr, tmp2);
 
@@ -366,6 +368,7 @@ void execute() {
          checkForward(writeRegisters[2], writeRegisters[1], ri.rs, -1);
          addr = rf[ri.rs] + signExtend16to32ui(ri.imm);
          tmp2 = dmem[addr];
+         caches.access(addr);
          rf.write(ri.rt, tmp2.data_ubyte4(0));
          writeRegisters[0] = ri.rt;
          loadCycle = true;
